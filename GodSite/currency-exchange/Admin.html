@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>jQuery Add / Remove Table Rows Dynamically</title>
+    <style>
+        form {
+            margin: 20px 0;
+        }
+
+        form input,
+        button {
+            padding: 5px;
+        }
+
+        table {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #cdcdcd;
+        }
+
+        table th,
+        table td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.1.2/papaparse.js"></script>
+    <script>
+        $(document).ready(function () {
+            $(".add-row").click(function () {
+                var year = $("#year").val();
+                var imagePath = $("#imagePath").val();
+                var Description = $("#Description").val();
+                var markup = "<tr><td><input type='checkbox' name='record'></td><td>" + year + "</td><td>" + imagePath + "</td><td>" + Description + "</td></tr>";
+                $("table tbody").append(markup);
+            });
+
+            // Find and remove selected table rows
+            $(".delete-row").click(function () {
+                $("table tbody").find('input[name="record"]').each(function () {
+                    if ($(this).is(":checked")) {
+                        $(this).parents("tr").remove();
+                    }
+                });
+            });
+
+            document.getElementById("btnexportcsv").addEventListener("click", function () {
+                var html = document.querySelector("table").outerHTML;
+                alert("test csv");
+                export_table_to_csv(html, "table.csv");
+            });
+
+
+
+        });
+        // from html to csv
+        function download_csv(csv, filename) {
+            var csvFile;
+            var downloadLink;
+
+            // CSV FILE
+            csvFile = new Blob([csv], { type: "text/csv" });
+
+            // Download link
+            downloadLink = document.createElement("a");
+
+            // File name
+            downloadLink.download = filename;
+
+            // We have to create a link to the file
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+
+            // Make sure that the link is not displayed
+            downloadLink.style.display = "none";
+
+            // Add the link to your DOM
+            document.body.appendChild(downloadLink);
+
+            // Lanzamos
+            downloadLink.click();
+        }
+
+        function export_table_to_csv(html, filename) {
+            var csv = [];
+            var rows = document.querySelectorAll("table tr");
+
+            for (var i = 0; i < rows.length; i++) {
+                var row = [], cols = rows[i].querySelectorAll("td, th");
+
+                for (var j = 1; j < cols.length; j++)
+                    row.push(cols[j].innerText);
+
+                csv.push(row.join(","));
+            }
+
+            // Download CSV
+            download_csv(csv.join("\n"), filename);
+        }
+
+        window.onload = function () {
+
+            $.ajax({
+                type: "GET",
+                url: "table.csv",
+                success: function (data) {
+            
+                    $('body').append(arrayToTable(Papa.parse(data).data));
+                }
+            });
+
+            // from csv to html
+            function arrayToTable(tableData) {
+                var table = $('<table id="tableimg"></table>');
+                $(tableData).each(function (i, rowData) {
+
+                    var row = $('<tr></tr>');
+                    $(rowData).each(function (j, cellData) {
+                        if (i == 0) {
+                            row.append($('<th>' + cellData + '</th>'));
+                        }
+                        else {
+                            if (j == 0) {
+                                row.append($('<td><input type=\"checkbox\" name=\"record\"></td>'));
+                            }
+                            else {
+                                row.append($('<td>' + cellData + '</td>'));
+                            }
+                        }
+                    });
+
+                    table.append(row);
+                    
+                });
+                return table;
+            }
+
+        }
+
+    </script>
+</head>
+
+<body>
+    <form>
+        <input type="text" id="year" placeholder="year">
+        <input type="text" id="imagePath" placeholder="imagePath">
+        <input type="text" id="Description" placeholder="Description">
+        <input type="button" class="add-row" value="Add Row">
+    </form>
+    <button type="button" class="delete-row">Delete Row</button>
+    <button type="button" id="btnexportcsv">Export HTML table to CSV file</button>
+</body>
